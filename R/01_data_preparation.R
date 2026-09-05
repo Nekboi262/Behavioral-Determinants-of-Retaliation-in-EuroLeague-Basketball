@@ -3,25 +3,44 @@
 # Behavioral Determinants of Retaliation in EuroLeague Basketball
 # ============================================================
 
-# Load EuroLeague player-level dataset
+
+# ============================================================
+# Load EuroLeague Player-Level Dataset
+# ============================================================
+
 final_dataset <- read.csv("data/final_dataset.csv")
 
 # Inspect the dataset
 head(final_dataset)
 str(final_dataset)
-# ============================================================
-# Load QJE Cultural Data
-# ============================================================
 
-qje <- read_dta("data/QJE.dta")
 
 # ============================================================
-# Standardise Country Codes and Merge QJE Data
+# Standardise Player Names and Country Codes
 # ============================================================
 
-# Convert player country names to ISO3 codes
 final_dataset <- final_dataset %>%
   mutate(
+    # Standardise specific player names
+    player = case_when(
+      player %in% c("GONZÁLEZ, HUGO", "GONZALEZ, HUGO") ~ "GONZALEZ, HUGO",
+      player %in% c("MARÍ, LUCAS", "MARI, LUCAS") ~ "MARI, LUCAS",
+      TRUE ~ player
+    ),
+
+    # Fill missing/incorrect countries used in the dissertation
+    player_country = ifelse(
+      player == "GONZALEZ, HUGO", "Spain",
+      ifelse(
+        player == "MARI, LUCAS", "Spain",
+        ifelse(
+          player == "McCORMACK, DAVID", "United States",
+          player_country
+        )
+      )
+    ),
+
+    # Convert country names to ISO3 codes
     player_country = countrycode(
       player_country,
       origin = "country.name",
@@ -29,27 +48,33 @@ final_dataset <- final_dataset %>%
     )
   )
 
-# Merge cultural and behavioral indicators
+
+# ============================================================
+# Load and Merge QJE Behavioral Data
+# ============================================================
+
+qje <- read_dta("data/QJE.dta")
+
 final_dataset <- final_dataset %>%
   left_join(
     qje,
     by = c("player_country" = "ISO3")
   )
 
-# Clean variable names
+# Standardise column names
 df <- final_dataset %>%
   janitor::clean_names()
+
+
 # ============================================================
 # Add Player Birthdates and Calculate Age
 # ============================================================
 
-# Load player birthdate data
 player_info <- read.csv("data/euroleague_alltime.csv")
 
-# Rename player column to match the main dataset
+# Rename player column to match main dataset
 names(player_info)[3] <- "player"
 
-# Merge birthdates
 df <- df %>%
   left_join(
     player_info %>% select(player, birthdate),
@@ -57,11 +82,10 @@ df <- df %>%
     relationship = "many-to-many"
   )
 
-# Move birthdate next to player name
 df <- df %>%
   relocate(birthdate, .after = player)
 
-# Calculate player age at the start of each EuroLeague season
+# Calculate age at the beginning of each EuroLeague season
 df <- df %>%
   mutate(
     birthdate = as.Date(birthdate),
@@ -74,6 +98,8 @@ df <- df %>%
       )
     )
   )
+
+
 # ============================================================
 # Add Player Race
 # ============================================================
@@ -92,7 +118,6 @@ df <- df %>%
 # Add Player Height
 # ============================================================
 
-# EuroLeague seasons used to retrieve player information
 seasons <- paste0("E", 2017:2025)
 
 teams <- getCompetitionTeams(seasons)
@@ -106,16 +131,15 @@ height_data <- getTeamPeople(
 height_data <- height_data %>%
   filter(TypeName == "Player")
 
-# Create player-height lookup table
+# Create player-height lookup
 height_lookup <- height_data %>%
-  select(PersonName, PersonHeight) %>%
-  distinct() %>%
-  rename(
+  transmute(
     player = PersonName,
-    height_cm = PersonHeight
-  )
+    height_cm = as.numeric(PersonHeight)
+  ) %>%
+  distinct()
 
-# Merge height with main dataset
+# Merge height into main dataset
 df <- df %>%
   left_join(
     height_lookup,
@@ -132,6 +156,8 @@ df <- df %>%
   mutate(
     ft_rate = free_throws_made / free_throws_attempted
   )
+
+
 # ============================================================
 # Create Experience Groups
 # ============================================================
