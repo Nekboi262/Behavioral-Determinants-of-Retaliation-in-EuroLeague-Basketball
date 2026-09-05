@@ -24,7 +24,7 @@ The project combines two main sources of data:
 
 ### EuroLeague Data
 
-Player-level basketball statistics covering the EuroLeague seasons from **2016–17 to 2024–25**, including variables such as:
+Player-level basketball statistics covering the EuroLeague seasons from **2016–17 to 2024–25**, from the euroleagueR package, developed by Jason Zivkovic (Jaseziv), including variables such as:
 
 - Fouls committed
 - Fouls received
@@ -39,7 +39,9 @@ Player-level basketball statistics covering the EuroLeague seasons from **2016�
 
 ### Behavioral and Cultural Data
 
-Country-level behavioral measures were merged with player data using nationality.
+Country-level behavioral measures from the Quarterly Journal of Economics (QJE) dataset, which provides internationally comparable measures of psychological
+and cultural traits derived from large-scale, cross-country surveys. These indicators are conceptually related to Hofstede’s cultural dimensions and capture stable country-level
+preferences such as patience and negative reciprocity. These were merged with player data using nationality.
 
 The main behavioral variables used in the analysis are:
 
